@@ -6,12 +6,106 @@ from langchain.chains import create_sql_query_chain
 from langchain_community.tools.sql_database.tool import QuerySQLDataBaseTool
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import PromptTemplate
-from langchain_core.runnables import RunnablePassthrough,RunnableLambda
+from langchain_core.runnables import RunnablePassthrough, RunnableLambda
 from operator import itemgetter
 import asyncio
 
+st.set_page_config(page_title="Berdola", page_icon="berdola.png")
+st.markdown("""
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap');
+    .big-font {
+        font-family: Poppins, sans-serif;
+        color: #f4f4f4;
+        font-size: 36px;
+        font-weight: bold;
+        text-align: center;
+        margin-top: 20px;
+        margin-bottom: -20px;
+    }
+    .other-big {
+        font-family: Poppins, sans-serif;
+        color: #f4f4f4;
+        font-size: 42px;
+        font-weight: bold;
+        margin-bottom: -10px;
+    }
+    .stTextInput input {
+        background-color: #eeeeee;
+            color: #1F1A30;
+    }
+    .stTextInput input::placeholder {
+        color: #1F1A30;
+    }
+    .stTextInput label {
+        color: #787582;
+        justify-content: center;
+        margin-bottom: 10px;
+        font-family: Poppins, sans-serif; 
+    }
+    .stColumn {
+        position: absolute;
+        bottom: 0;
+        margin-bottom: 20px;  /* Adjust the margin as needed */
+    }
+    .Result {
+        font-family: Poppins;
+        color: #BBBBBB;
+        background-color: #1F1A30;
+        width: 100%;
+        padding: 20px;
+        justify-content: center;
+        margin-top: 20px;
+        border-radius: 10px;
+            font-size: 14px;
+    }
+    .img-circle {
+        border-radius: 50%;
+    }
+    .Success {
+        color: #3EC181;
+        background-color: rgba(6, 129, 61, 0.2);
+        border-radius: 5px;
+        height: 40px;
+        width: 100%;
+        padding: 10px;
+        align-items: center;
+        display: flex;  /* Add this line */
+        border: 1px solid #3EC181;
+        
+    }
+    .Error {
+        color: #ED5556;
+        background-color: rgba(212, 60, 61, 0.3);
+        border-radius: 5px;
+        width: 100%;
+        padding: 10px;
+        align-items: center;
+        display: flex;  /* Add this line */
+        border: 1px solid #ED5556;  
+    }
+            .Warning {
+        color: #F5AC54;
+        background-color: rgba(255, 186, 104, 0.3);
+        border-radius: 5px;
+        width: 100%;
+        padding: 10px;
+        align-items: center;
+        display: flex;  /* Add this line */
+        border: 1px solid #F5AC54;
+        
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+# Set Google API key if not already set
+if "GOOGLE_API_KEY" not in os.environ:
+    os.environ["GOOGLE_API_KEY"] = "AIzaSyA27oLqSp1kPNvyq_UJGlKlPP_FeJGZOi4"
+
+# Initialize database session state
 if 'db' not in st.session_state:
     st.session_state['db'] = None
+
 def run_query(db_uri):
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
@@ -25,81 +119,102 @@ def run_query(db_uri):
     finally:
         loop.close()
 
+# App title
+st.markdown(f'<p class="other-big">Hey Buddy! I\'m <span style="color:#A350FF">Berdola.</span>🫧</p>', unsafe_allow_html=True)
+st.markdown(f'<p style="font-family:Poppins; color:#6E726E; width: 550px;  ">Ready to explore your <span style="color:#A350FF">database</span>? Go ahead and ask me anything! I\'m here to help make querying a breeze. 🤖🍀</p>', unsafe_allow_html=True)
 
-def queryWithAI(db,request):
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    try:
-            llm = ChatGoogleGenerativeAI(model="gemini-pro")
-            chain = create_sql_query_chain(llm, db)
-            query = chain.invoke({"question": request})
-            query = query.replace("```sql", "").replace("```", "")
-            return db.run(query)
-    finally:
-        loop.close()
-# Title of the app
-st.title('QUERY WITH B-ERD (our sql query chatbot)')
-st.image('https://scontent.fceb3-1.fna.fbcdn.net/v/t1.6435-9/87454319_2787791111347251_2582408314319011840_n.jpg?_nc_cat=110&ccb=1-7&_nc_sid=5f2048&_nc_eui2=AeGahkLc6lk4NMvqXItf1cGr3yU1FpFZEnDfJTUWkVkScCOCw-m7A60I9k-1VkkNPTtoYt6QNe3ZuqVfJrIZG7mB&_nc_ohc=vXLxAs3a7JIQ7kNvgFVFOkM&_nc_ht=scontent.fceb3-1.fna&oh=00_AYAd3yKF55zoV-juHvodSoBPa-eoYYKHJY7-hgsG2wxw3w&oe=66706778'
-         , caption='Meet Berd.')
+# Image
+st.sidebar.markdown(
+    """
+    <style>
+    .img-circle {
+        border-radius: 50%;
+        width: 70%;
+        display: block;
+        margin: auto;
+        margin-top: -30px;
+    }
+    </style>
+    <img class='img-circle' src='https://ipfs.pixura.io/ipfs/QmQDZJqTQXJvjjhkBSkYkcnE8L7QkRTH6P6LMbMcuMa1UF' />
+    """,
+    unsafe_allow_html=True,
+)
 
-# Input for the database URI
-db_uri = st.text_input('Enter your database URI')
+# Sidebar title
+st.sidebar.markdown(f'<p class="big-font">BERDOLA</p>', unsafe_allow_html=True)
+st.sidebar.markdown(f'<p style="font-family:Poppins; color:#787582; text-align: center; margin-bottom: 50px">Your <span style="color:#A350FF">SQL Query</span> Buddy</p>', unsafe_allow_html=True)
 
-# Button to run the query
-if st.button('Connect to database'):
+# Database Connection
+db_uri = st.sidebar.text_input('Enter your MySQL database URI', placeholder="Enter here...")
+response_placeholder = st.sidebar.empty()
+col1, col2, col3 = st.sidebar.columns([1.5,2,1])
+# Create a placeholder for the response messages
+
+if col2.button('Connect', type="primary"):
     if db_uri:
         try:
             # Connect to the database
-            dbURI = "mysql+mysqlconnector:"+db_uri
+            dbURI = "mysql+mysqlconnector:" + db_uri
             print(dbURI)
             db = SQLDatabase.from_uri(dbURI)
-
-            st.session_state['db'] = SQLDatabase.from_uri(dbURI)
-            st.write("Connected to the database")
+            st.session_state['db'] = db
+            response_placeholder.markdown('<p class="Success"> Connected to the database</p>', unsafe_allow_html=True)
         except Exception as e:
-            st.write(f"An error occurred: {e}")
+            response_placeholder.markdown(f'<p class="Error">An error occurred: {e}</p>', unsafe_allow_html=True)
     else:
-        st.write("Please enter a database URI")
+        response_placeholder.markdown('<p class="Warning">Please enter a database URI</p>', unsafe_allow_html=True)
 
+#Copyright char
+st.sidebar.markdown(f'<p style="font-family:Poppins; color:#787582; text-align: center; margin-top: 80px; font-size:12px;">© 2024 Berdola. All rights reserved.</p>', unsafe_allow_html=True)
+# Initialize result
+result = None
 
-Inputquery = st.text_input('chat with KET THE SQL QUERIERRRRR')
-
-# Button to run the query
+# Main area for running the query
 if st.session_state['db'] is not None:
-    if st.button('Run Query'):
-        try:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            def clean_sql_query(query):
-                return query.replace("```sql", "").replace("```", "")
-            
-            llm = ChatGoogleGenerativeAI(model="gemini-pro")
-            execute_query = QuerySQLDataBaseTool(db=st.session_state['db'])
-            write_query = create_sql_query_chain(llm, st.session_state['db'])
-            chain = write_query | execute_query
-            # chain.get_prompts()[0].pretty_print()
-            answer_prompt = PromptTemplate.from_template(
-                """Given the following user question, corresponding SQL query, and SQL result, answer the user question.
-
-            Question: {question}
-            SQL Query: {query}
-            SQL Result: {result}
-            Answer: """
-            )
-
-            clean_query = RunnableLambda(clean_sql_query)
-            # chain.get_prompts()[0].pretty_print()
-            answer = answer_prompt | llm | StrOutputParser()
-            chain = (
-                RunnablePassthrough.assign(query=write_query).assign(
-                    result=itemgetter("query") | clean_query | execute_query
+    # Layout with input field and button
+    input_col, button_col = st.columns([5, 1])
+    with input_col:
+        input_query = st.text_input('', placeholder='Enter your query here, bud!')
+    with button_col:
+        st.write("")  # Create some space to push the button to the bottom
+        st.write("")  # Create some space to push the button to the bottom
+        if st.button('Run Query', type="primary"):
+            try:
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                
+                def clean_sql_query(query):
+                    return query.replace("```sql", "").replace("```", "")
+                
+                llm = ChatGoogleGenerativeAI(model="gemini-pro")
+                execute_query = QuerySQLDataBaseTool(db=st.session_state['db'])
+                write_query = create_sql_query_chain(llm, st.session_state['db'])
+                chain = write_query | execute_query
+    
+                answer_prompt = PromptTemplate.from_template(
+                    """Given the following user question, corresponding SQL query, and SQL result, answer the user question.
+    
+                    Question: {question}
+                    SQL Query: {query}
+                    SQL Result: {result}
+                    Answer: """
                 )
-                | answer
-            )
-
-            result = chain.invoke({"question": Inputquery})
-            st.markdown(f'<p style="font-family:sans-serif; color:Green;">{result}</p>', unsafe_allow_html=True)
-        except Exception as e:
-            st.markdown(f'<p style="font-family:sans-serif; color:Red;">An error occurred: {e}</p>', unsafe_allow_html=True)
-        finally:
-            loop.close()
+    
+                clean_query = RunnableLambda(clean_sql_query)
+                answer = answer_prompt | llm | StrOutputParser()
+                chain = (
+                    RunnablePassthrough.assign(query=write_query).assign(
+                        result=itemgetter("query") | clean_query | execute_query
+                    )
+                    | answer
+                )
+    
+                result = chain.invoke({"question": input_query})
+            except Exception as e:
+                result = f'<p class="Error">An error occurred: {e}</p>'
+            finally:
+                loop.close()
+                
+# Display the result
+if result is not None:
+    st.markdown(f'<p class="Result">{result}</p>', unsafe_allow_html=True)
